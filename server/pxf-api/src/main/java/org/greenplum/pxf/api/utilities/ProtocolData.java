@@ -39,6 +39,9 @@ public class ProtocolData extends InputData {
     private static final String TRUE_LCASE = "true";
     private static final String FALSE_LCASE = "false";
     private static final String PROP_PREFIX = "X-GP-";
+    private static final String PROTOCOL_HADOOP = "hdfs://";
+    private static final String PROTOCOL_S3 = "s3://";
+    private static final String PROTOCOL_AZURE = "adl://";
     public static final int INVALID_SPLIT_IDX = -1;
 
     private static final Log LOG = LogFactory.getLog(ProtocolData.class);
@@ -99,7 +102,12 @@ public class ProtocolData extends InputData {
 
         fragmenter = getUserProperty("FRAGMENTER");
         metadata = getUserProperty("METADATA");
-        dataSource = getProperty("DATA-DIR");
+
+        if (isS3Profile()) {
+            dataSource = PROTOCOL_S3 + getProperty("DATA-DIR");
+        } else if (isAdlProfile()) {
+            dataSource = PROTOCOL_AZURE + getProperty("DATA-DIR");
+        }
 
         parseSecurityProperties();
 
@@ -129,6 +137,14 @@ public class ProtocolData extends InputData {
         if (fragmentIndexStr != null) {
             this.setFragmentIndex(Integer.parseInt(fragmentIndexStr));
         }
+    }
+
+    private boolean isAdlProfile() {
+        return profile != null && profile.startsWith("ADL");
+    }
+
+    private boolean isS3Profile() {
+        return profile != null && profile.startsWith("S3");
     }
 
     /**
