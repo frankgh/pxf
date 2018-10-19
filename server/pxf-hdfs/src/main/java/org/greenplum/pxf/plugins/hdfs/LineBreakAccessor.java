@@ -67,7 +67,8 @@ public class LineBreakAccessor extends HdfsSplittableDataAccessor implements
     protected Object getReader(JobConf jobConf, InputSplit split)
             throws IOException {
 
-        return isDFS ? new ChunkRecordReader(jobConf, (FileSplit) split) :
+        return (hcfsType == HdfsUtilities.HCFSType.HDFS) ?
+                new ChunkRecordReader(jobConf, (FileSplit) split) :
                 new LineRecordReader(jobConf, (FileSplit) split);
     }
 

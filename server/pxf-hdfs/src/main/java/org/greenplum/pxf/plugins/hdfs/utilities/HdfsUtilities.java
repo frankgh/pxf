@@ -55,6 +55,25 @@ public class HdfsUtilities {
     private static Configuration config = new Configuration();
     private static CompressionCodecFactory factory = new CompressionCodecFactory(
             config);
+    private static final String PROTOCOL_HDFS = "hdfs://";
+    private static final String PROTOCOL_S3 = "s3a://";
+    private static final String PROTOCOL_AZURE = "adl://";
+    private static final String FS_DEFAULT_NAME_KEY = "fs.defaultFS";
+
+    public enum HCFSType {
+        HDFS("hdfs"),
+        S3("s3"),
+        ADLS("adls"),
+        FILE("file");
+
+        private String value;
+        HCFSType( String value) {
+            this.value = value;
+        }
+        public String value() {
+            return value;
+        }
+    }
 
     /**
      * Hdfs data sources are absolute data paths. Method ensures that dataSource
@@ -64,8 +83,57 @@ public class HdfsUtilities {
      *            Retrieved from the client request.
      * @return an absolute data path
      */
-    public static String absoluteDataPath(String dataSource) {
+    private static String absoluteDataPath(String dataSource) {
         return (dataSource.charAt(0) == '/') ? dataSource : "/" + dataSource;
+    }
+
+    public static String getDataUri(String dataSource, String profile, Configuration jobConf) {
+        String dataUri;
+        final String defaultFS = jobConf.get(FS_DEFAULT_NAME_KEY);
+        defaultFS.charAt(defaultFS.length() - 1) == '/'
+
+        switch(getHCFSType(profile, defaultFS)) {
+            case S3:
+                dataUri = PROTOCOL_S3 + dataSource;
+                break;
+            case ADLS:
+                dataUri = PROTOCOL_AZURE + dataSource;
+                break;
+            case HDFS:
+                dataUri = defaultFS + dataSource;
+                break;
+            default:
+                dataUri = absoluteDataPath(dataSource);
+                break;
+        }
+        return dataUri;
+    }
+
+    public static HCFSType getHCFSType(String profile, String defaultFS) {
+        HCFSType hcfsType;
+        if(profile != null) {
+            String normalizedProfile = profile.toLowerCase();
+            if(normalizedProfile.startsWith(HCFSType.S3.value))
+                hcfsType = HCFSType.S3;
+            else if(normalizedProfile.startsWith(HCFSType.S3.value))
+                hcfsType = HCFSType.ADLS;
+            else if(normalizedProfile.startsWith(HCFSType.HDFS.value))
+                hcfsType = HCFSType.HDFS;
+            else
+                hcfsType = HCFSType.FILE;
+        } else if (defaultFS != null) {
+            if(defaultFS.startsWith(HCFSType.S3.value))
+                hcfsType = HCFSType.S3;
+            else if(defaultFS.startsWith(HCFSType.S3.value))
+                hcfsType = HCFSType.ADLS;
+            else if(defaultFS.startsWith(HCFSType.HDFS.value))
+                hcfsType = HCFSType.HDFS;
+            else
+                hcfsType = HCFSType.FILE;
+        } else {
+            hcfsType = HCFSType.FILE;
+        }
+        return hcfsType;
     }
 
     /*
@@ -73,7 +141,6 @@ public class HdfsUtilities {
      */
     private static Class<? extends CompressionCodec> getCodecClass(Configuration conf,
                                                                    String name) {
-
         Class<? extends CompressionCodec> codecClass;
         try {
             codecClass = conf.getClassByName(name).asSubclass(
@@ -257,4 +324,5 @@ public class HdfsUtilities {
         MessageType schema = MessageTypeParser.parseMessageType(new String(input.getFragmentUserData()));
         return new ParquetUserData(schema);
     }
+
 }

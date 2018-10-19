@@ -8,9 +8,9 @@ package org.greenplum.pxf.plugins.hdfs;
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -45,7 +45,7 @@ import java.util.List;
  * host:port locations for each.
  */
 public class HdfsDataFragmenter extends Fragmenter {
-    private JobConf jobConf;
+    protected JobConf jobConf;
 
     /**
      * Constructs an HdfsDataFragmenter object.
@@ -55,14 +55,11 @@ public class HdfsDataFragmenter extends Fragmenter {
     public HdfsDataFragmenter(InputData md) {
         super(md);
 
-        // TODO: Temp change to work with s3a
         Configuration conf = new Configuration();
 
         md.getUserPropertiesStream()
-                .forEach(entry -> conf.set(entry.getKey(), entry.getValue()));
-//        conf.set("fs.s3a.access.key", "FIXME");
-//        conf.set("fs.s3a.secret.key", "FIXME");
-//        conf.set("fs.s3a.fast.upload", "true");
+                .forEach(entry -> conf.set(entry.getKey()
+                        .substring(InputData.USER_PROP_PREFIX.length()), entry.getValue()));
         jobConf = new JobConf(conf, HdfsDataFragmenter.class);
     }
 
@@ -73,19 +70,13 @@ public class HdfsDataFragmenter extends Fragmenter {
      */
     @Override
     public List<Fragment> getFragments() throws Exception {
-        Path path;
-        if(inputData.getDataSource().contains("://")) {
-            path = new Path(inputData.getDataSource());
-        } else {
-            path = new Path(HdfsUtilities.absoluteDataPath(inputData.getDataSource()));
-        }
-        //List<InputSplit> splits = getSplits(new Path(absoluteDataPath));
+        Path path = new Path(HdfsUtilities.getDataUri(inputData.getDataSource(),
+                inputData.getProfile(), jobConf));
         List<InputSplit> splits = getSplits(path);
 
         for (InputSplit split : splits) {
             FileSplit fsp = (FileSplit) split;
 
-            //String filepath = fsp.getPath().toUri().getPath();
             String filepath = fsp.getPath().toString();
             String[] hosts = fsp.getLocations();
 
@@ -103,7 +94,8 @@ public class HdfsDataFragmenter extends Fragmenter {
 
     @Override
     public FragmentsStats getFragmentsStats() throws Exception {
-        String absoluteDataPath = HdfsUtilities.absoluteDataPath(inputData.getDataSource());
+        String absoluteDataPath = HdfsUtilities.getDataUri(inputData.getDataSource(),
+                inputData.getProfile(), jobConf.get("fs.defaultFS"));
         ArrayList<InputSplit> splits = getSplits(new Path(absoluteDataPath));
 
         if (splits.isEmpty()) {

@@ -8,9 +8,9 @@ package org.greenplum.pxf.plugins.hdfs;
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -45,23 +45,19 @@ import java.util.List;
  * Fragmenter for Parquet on HDFS.
  * Returns list of splits for a given HDFS path.
  */
-public class ParquetDataFragmenter extends Fragmenter {
+public class ParquetDataFragmenter extends HdfsDataFragmenter {
+
     private Job job;
 
     public ParquetDataFragmenter(InputData md) {
         super(md);
-        JobConf jobConf = new JobConf(new Configuration(), ParquetDataFragmenter.class);
-        try {
-            job = Job.getInstance(jobConf);
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to instantiate a job for reading fragments", e);
-        }
     }
 
 
     @Override
     public List<Fragment> getFragments() throws Exception {
-        String absoluteDataPath = HdfsUtilities.absoluteDataPath(inputData.getDataSource());
+        String absoluteDataPath = HdfsUtilities.getDataUri(inputData.getDataSource(),
+                inputData.getProfile(), jobConf.get("fs.defaultFS"));
         List<InputSplit> splits = getSplits(new Path(absoluteDataPath));
 
         for (InputSplit split : splits) {
@@ -73,7 +69,7 @@ public class ParquetDataFragmenter extends Fragmenter {
             Path file = new Path(filepath);
 
             ParquetMetadata metadata = ParquetFileReader.readFooter(
-                    job.getConfiguration(), file, ParquetMetadataConverter.NO_FILTER);
+                    jobConf, file, ParquetMetadataConverter.NO_FILTER);
             MessageType schema = metadata.getFileMetaData().getSchema();
 
             byte[] fragmentMetadata = HdfsUtilities.prepareFragmentMetadata(fsp.getStart(), fsp.getLength(), fsp.getLocations());
@@ -86,7 +82,7 @@ public class ParquetDataFragmenter extends Fragmenter {
 
         private List<InputSplit> getSplits (Path path) throws IOException {
             ParquetInputFormat<Group> parquetInputFormat = new ParquetInputFormat<Group>();
-            ParquetInputFormat.setInputPaths(job, path);
+            ParquetInputFormat.setInputPaths(Job.getInstance(jobConf), path);
             List<InputSplit> splits = parquetInputFormat.getSplits(job);
             ArrayList<InputSplit> result = new ArrayList<InputSplit>();
 
