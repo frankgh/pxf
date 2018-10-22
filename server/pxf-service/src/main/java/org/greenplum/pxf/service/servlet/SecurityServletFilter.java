@@ -81,9 +81,15 @@ public class SecurityServletFilter implements Filter {
     public void doFilter(final ServletRequest request, final ServletResponse response, final FilterChain chain)
             throws IOException, ServletException {
 
-        //if (SecureLogin.isUserImpersonationEnabled()) {
-        final String isUserImpersonation = getHeaderValue(request, "X-GP-OPTIONS-IMPERSONATION", false);
-        if ("true".equals(isUserImpersonation)) {
+        boolean isUserImpersonation;
+        String impersonationHeaderValue = getHeaderValue(request, "X-GP-OPTIONS-IMPERSONATION", false);
+        if (StringUtils.isBlank(impersonationHeaderValue)) {
+            isUserImpersonation = Utilities.isUserImpersonationEnabled();
+        } else {
+            isUserImpersonation = StringUtils.equals("true", impersonationHeaderValue);
+        }
+
+        if (isUserImpersonation) {
             LOG.info("User Impersonation is enabled");
             // retrieve user header and make sure header is present and is not empty
             final String gpdbUser = getHeaderValue(request, USER_HEADER, true);

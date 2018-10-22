@@ -70,8 +70,7 @@ public class HdfsDataFragmenter extends Fragmenter {
      */
     @Override
     public List<Fragment> getFragments() throws Exception {
-        Path path = new Path(HdfsUtilities.getDataUri(inputData.getDataSource(),
-                inputData.getProfile(), jobConf));
+        Path path = new Path(HdfsUtilities.getDataUri(inputData, jobConf));
         List<InputSplit> splits = getSplits(path);
 
         for (InputSplit split : splits) {
@@ -94,8 +93,7 @@ public class HdfsDataFragmenter extends Fragmenter {
 
     @Override
     public FragmentsStats getFragmentsStats() throws Exception {
-        String absoluteDataPath = HdfsUtilities.getDataUri(inputData.getDataSource(),
-                inputData.getProfile(), jobConf.get("fs.defaultFS"));
+        String absoluteDataPath = HdfsUtilities.getDataUri(inputData, jobConf);
         ArrayList<InputSplit> splits = getSplits(new Path(absoluteDataPath));
 
         if (splits.isEmpty()) {

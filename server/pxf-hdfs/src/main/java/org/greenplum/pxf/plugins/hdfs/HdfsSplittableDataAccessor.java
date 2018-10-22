@@ -74,7 +74,7 @@ public abstract class HdfsSplittableDataAccessor extends Plugin implements
         jobConf = new JobConf(conf, HdfsSplittableDataAccessor.class);
 
         // Check if the underlying configuration is for HDFS
-        hcfsType = HdfsUtilities.getHCFSType(input.getProfile(), conf.get("fs.defaultFS"));
+        hcfsType = HdfsUtilities.getHCFSType(input, conf);
     }
 
     /**

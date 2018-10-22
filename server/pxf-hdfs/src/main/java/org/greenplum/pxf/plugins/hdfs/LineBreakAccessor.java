@@ -39,6 +39,7 @@ import org.greenplum.pxf.plugins.hdfs.utilities.HdfsUtilities;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.URI;
 
 /**
  * A PXF Accessor for reading delimited plain text records.
@@ -78,12 +79,12 @@ public class LineBreakAccessor extends HdfsSplittableDataAccessor implements
     @Override
     public boolean openForWrite() throws Exception {
 
-        String fileName = inputData.getDataSource();
+        String fileName = HdfsUtilities.getDataUri(inputData, jobConf);
         String compressCodec = inputData.getUserProperty("COMPRESSION_CODEC");
         CompressionCodec codec = null;
 
         conf = new Configuration();
-        fs = FileSystem.get(conf);
+        fs = FileSystem.get(URI.create(fileName), conf);
 
         // get compression codec
         if (compressCodec != null) {

@@ -19,6 +19,7 @@ package org.greenplum.pxf.plugins.hdfs.utilities;
  * under the License.
  */
 
+import org.apache.commons.lang.StringUtils;
 import org.greenplum.pxf.api.io.DataType;
 import org.greenplum.pxf.api.OneField;
 import org.greenplum.pxf.api.utilities.FragmentMetadata;
@@ -67,9 +68,11 @@ public class HdfsUtilities {
         FILE("file");
 
         private String value;
-        HCFSType( String value) {
+
+        HCFSType(String value) {
             this.value = value;
         }
+
         public String value() {
             return value;
         }
@@ -80,60 +83,58 @@ public class HdfsUtilities {
      * begins with '/'.
      *
      * @param dataSource The HDFS path to a file or directory of interest.
-     *            Retrieved from the client request.
+     *                   Retrieved from the client request.
      * @return an absolute data path
      */
     private static String absoluteDataPath(String dataSource) {
         return (dataSource.charAt(0) == '/') ? dataSource : "/" + dataSource;
     }
 
-    public static String getDataUri(String dataSource, String profile, Configuration jobConf) {
+    public static String getDataUri(InputData input, Configuration jobConf) {
         String dataUri;
-        final String defaultFS = jobConf.get(FS_DEFAULT_NAME_KEY);
-        defaultFS.charAt(defaultFS.length() - 1) == '/'
 
-        switch(getHCFSType(profile, defaultFS)) {
+        switch (getHCFSType(input, jobConf)) {
             case S3:
-                dataUri = PROTOCOL_S3 + dataSource;
+                dataUri = PROTOCOL_S3 + (StringUtils.startsWith(input.getDataSource(), "/") ?
+                        input.getDataSource().substring(1) : input.getDataSource());
                 break;
             case ADLS:
-                dataUri = PROTOCOL_AZURE + dataSource;
+                dataUri = PROTOCOL_AZURE + input.getDataSource();
                 break;
             case HDFS:
-                dataUri = defaultFS + dataSource;
+                dataUri = (!StringUtils.endsWith(jobConf.get(FS_DEFAULT_NAME_KEY), "/") ?
+                        jobConf.get(FS_DEFAULT_NAME_KEY) + "/" :
+                        jobConf.get(FS_DEFAULT_NAME_KEY)) + input.getDataSource();
+
                 break;
             default:
-                dataUri = absoluteDataPath(dataSource);
+                dataUri = absoluteDataPath(input.getDataSource());
                 break;
         }
         return dataUri;
     }
 
-    public static HCFSType getHCFSType(String profile, String defaultFS) {
-        HCFSType hcfsType;
-        if(profile != null) {
-            String normalizedProfile = profile.toLowerCase();
-            if(normalizedProfile.startsWith(HCFSType.S3.value))
-                hcfsType = HCFSType.S3;
-            else if(normalizedProfile.startsWith(HCFSType.S3.value))
-                hcfsType = HCFSType.ADLS;
-            else if(normalizedProfile.startsWith(HCFSType.HDFS.value))
-                hcfsType = HCFSType.HDFS;
-            else
-                hcfsType = HCFSType.FILE;
-        } else if (defaultFS != null) {
-            if(defaultFS.startsWith(HCFSType.S3.value))
-                hcfsType = HCFSType.S3;
-            else if(defaultFS.startsWith(HCFSType.S3.value))
-                hcfsType = HCFSType.ADLS;
-            else if(defaultFS.startsWith(HCFSType.HDFS.value))
-                hcfsType = HCFSType.HDFS;
-            else
-                hcfsType = HCFSType.FILE;
-        } else {
-            hcfsType = HCFSType.FILE;
+    /**
+     * Returns the type of filesystem being accesses
+     * Profile will override the default filesystem configured
+     *
+     * @param input The input data parameters
+     * @param conf hadoop client configuration
+     * @return an absolute data path
+     */
+    public static HCFSType getHCFSType(InputData input, Configuration conf) {
+        String profile = input.getProfile();
+        String protocol = (profile != null) ? profile.toLowerCase() : conf.get(FS_DEFAULT_NAME_KEY);
+
+        if (StringUtils.startsWith(protocol, HCFSType.S3.value)) {
+            return HCFSType.S3;
+        } else if (StringUtils.startsWith(protocol, HCFSType.S3.value)) {
+            return HCFSType.ADLS;
+        } else if (StringUtils.startsWith(protocol, HCFSType.HDFS.value)) {
+            return HCFSType.HDFS;
         }
-        return hcfsType;
+
+        return HCFSType.FILE;
     }
 
     /*
@@ -201,7 +202,7 @@ public class HdfsUtilities {
     /**
      * Checks if requests should be handle in a single thread or not.
      *
-     * @param dataDir hdfs path to the data source
+     * @param dataDir   hdfs path to the data source
      * @param compCodec the fully qualified name of the compression codec
      * @return if the request can be run in multi-threaded mode.
      */
@@ -272,7 +273,7 @@ public class HdfsUtilities {
      * schema. The splittable API (AvroInputFormat) which is the one we will be
      * using to fetch the records, does not support getting the Avro schema yet.
      *
-     * @param conf Hadoop configuration
+     * @param conf       Hadoop configuration
      * @param dataSource Avro file (i.e fileName.avro) path
      * @return the Avro schema
      * @throws IOException if I/O error occurred while accessing Avro schema file
@@ -294,7 +295,7 @@ public class HdfsUtilities {
      * relayed properly to the DB.
      *
      * @param complexRecord list of fields to be stringified
-     * @param delimiter delimiter between fields
+     * @param delimiter     delimiter between fields
      * @return string of serialized fields using delimiter
      */
     public static String toString(List<OneField> complexRecord, String delimiter) {

@@ -19,7 +19,6 @@ package org.greenplum.pxf.plugins.hdfs.utilities;
  * under the License.
  */
 
-
 import org.greenplum.pxf.api.OneField;
 import org.greenplum.pxf.api.utilities.InputData;
 import org.apache.commons.logging.Log;
@@ -66,17 +65,27 @@ public class HdfsUtilitiesTest {
 
     @Test
     public void getDataPathForAnS3Profile() throws Exception {
-        assertEquals("s3://foo/bar", HdfsUtilities.getDataUri("foo/bar", "S3_PROFILE"));
+        InputData inputData = mock(InputData.class);
+//        conf = new Configuration();
+//        conf.set()
+        when(inputData.getDataSource()).thenReturn("bucketname/filename");
+        when(inputData.getProfile()).thenReturn("S3Parquet");
+        assertEquals("s3a://bucketname/filename", HdfsUtilities.getDataUri(inputData, new Configuration()));
     }
 
     @Test
     public void getDataPathForAnAzureDataLakeProfile() throws Exception {
-        assertEquals("adl://baz/quux", HdfsUtilities.getDataUri("baz/quux", "ADL_PROFILE"));
+        InputData inputData = mock(InputData.class);
+        when(inputData.getDataSource()).thenReturn("mystore.azuredatalakestore.net/filename");
+        when(inputData.getProfile()).thenReturn("ADLText");
+        assertEquals("adl://mystore.azuredatalakestore.net/filename", HdfsUtilities.getDataUri(inputData, new Configuration()));
     }
 
     @Test
     public void getDataPathForSomeOtherProfile() throws Exception {
-        assertEquals("/foo/bar", HdfsUtilities.getDataUri("foo/bar", "SOME_OTHER_PROFILE"));
+        InputData inputData = mock(InputData.class);
+        when(inputData.getDataSource()).thenReturn("foo/bar");
+        assertEquals("/foo/bar", HdfsUtilities.getDataUri(inputData, new Configuration()));
     }
 
     @Test

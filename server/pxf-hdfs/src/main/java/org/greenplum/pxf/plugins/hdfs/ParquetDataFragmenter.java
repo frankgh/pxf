@@ -53,11 +53,9 @@ public class ParquetDataFragmenter extends HdfsDataFragmenter {
         super(md);
     }
 
-
     @Override
     public List<Fragment> getFragments() throws Exception {
-        String absoluteDataPath = HdfsUtilities.getDataUri(inputData.getDataSource(),
-                inputData.getProfile(), jobConf.get("fs.defaultFS"));
+        String absoluteDataPath = HdfsUtilities.getDataUri(inputData, jobConf);
         List<InputSplit> splits = getSplits(new Path(absoluteDataPath));
 
         for (InputSplit split : splits) {
@@ -80,25 +78,25 @@ public class ParquetDataFragmenter extends HdfsDataFragmenter {
         return fragments;
     }
 
-        private List<InputSplit> getSplits (Path path) throws IOException {
-            ParquetInputFormat<Group> parquetInputFormat = new ParquetInputFormat<Group>();
-            ParquetInputFormat.setInputPaths(Job.getInstance(jobConf), path);
-            List<InputSplit> splits = parquetInputFormat.getSplits(job);
-            ArrayList<InputSplit> result = new ArrayList<InputSplit>();
+    private List<InputSplit> getSplits(Path path) throws IOException {
+        ParquetInputFormat<Group> parquetInputFormat = new ParquetInputFormat<Group>();
+        ParquetInputFormat.setInputPaths(Job.getInstance(jobConf), path);
+        List<InputSplit> splits = parquetInputFormat.getSplits(job);
+        ArrayList<InputSplit> result = new ArrayList<InputSplit>();
 
-            if (splits != null) {
-                for (InputSplit split : splits) {
-                    try {
-                        if (split.getLength() > 0) {
-                            result.add(split);
-                        }
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException("Unable to read split's length", e);
+        if (splits != null) {
+            for (InputSplit split : splits) {
+                try {
+                    if (split.getLength() > 0) {
+                        result.add(split);
                     }
+                } catch (InterruptedException e) {
+                    throw new RuntimeException("Unable to read split's length", e);
                 }
             }
-
-            return result;
         }
+
+        return result;
+    }
 }
 
