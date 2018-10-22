@@ -47,34 +47,10 @@ import static org.mockito.Mockito.*;
 public class ProtocolDataTest {
     Map<String, String> parameters;
 
-    /*
-     * setUp function called before each test
-     */
-    @Before
-    public void setUp() {
-        parameters = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
-
-        parameters.put("X-GP-ALIGNMENT", "all");
-        parameters.put("X-GP-SEGMENT-ID", "-44");
-        parameters.put("X-GP-SEGMENT-COUNT", "2");
-        parameters.put("X-GP-HAS-FILTER", "0");
-        parameters.put("X-GP-FORMAT", "TEXT");
-        parameters.put("X-GP-URL-HOST", "my://bags");
-        parameters.put("X-GP-URL-PORT", "-8020");
-        parameters.put("X-GP-ATTRS", "-1");
-        parameters.put("X-GP-OPTIONS-ACCESSOR", "are");
-        parameters.put("X-GP-OPTIONS-RESOLVER", "packed");
-        parameters.put("X-GP-DATA-DIR", "i'm/ready/to/go");
-        parameters.put("X-GP-FRAGMENT-METADATA", "U29tZXRoaW5nIGluIHRoZSB3YXk=");
-        parameters.put("X-GP-OPTIONS-I'M-STANDING-HERE", "outside-your-door");
-        parameters.put("X-GP-USER", "alex");
-    }
-
     @Test
     public void protocolDataCreated() throws Exception {
         ProtocolData protocolData = new ProtocolData(parameters);
 
-        // TODO: expected and actual values are reversed here
         assertEquals(System.getProperty("greenplum.alignment"), "all");
         assertEquals(protocolData.getTotalSegments(), 2);
         assertEquals(protocolData.getSegmentId(), -44);
@@ -144,20 +120,6 @@ public class ProtocolDataTest {
             assertEquals(pce.getMsgFormat(), NO_PROFILE_DEF);
         }
     }
-
-//    @Test
-//    public void profileStartingWithS3SetsTheUrlScheme() throws Exception {
-//        parameters.put("X-GP-OPTIONS-PROFILE", "S3Text");
-//        ProtocolData protocolData = new ProtocolData(parameters);
-//        assertEquals("s3://i'm/ready/to/go", protocolData.dataSource);
-//    }
-//
-//    @Test
-//    public void profileStartingWithADLSetsTheUrlScheme() throws Exception {
-//        parameters.put("X-GP-OPTIONS-PROFILE", "ADLParquet");
-//        ProtocolData protocolData = new ProtocolData(parameters);
-//        assertEquals("adl://i'm/ready/to/go", protocolData.dataSource);
-//    }
 
     @Test
     public void threadSafeTrue() throws Exception {
@@ -436,6 +398,29 @@ public class ProtocolDataTest {
                     "Internal server error. Property \"ATTR-TYPEMOD0-1\" has no value in current request",
                     iae.getMessage());
         }
+    }
+
+    /*
+     * setUp function called before each test
+     */
+    @Before
+    public void setUp() {
+        parameters = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
+
+        parameters.put("X-GP-ALIGNMENT", "all");
+        parameters.put("X-GP-SEGMENT-ID", "-44");
+        parameters.put("X-GP-SEGMENT-COUNT", "2");
+        parameters.put("X-GP-HAS-FILTER", "0");
+        parameters.put("X-GP-FORMAT", "TEXT");
+        parameters.put("X-GP-URL-HOST", "my://bags");
+        parameters.put("X-GP-URL-PORT", "-8020");
+        parameters.put("X-GP-ATTRS", "-1");
+        parameters.put("X-GP-OPTIONS-ACCESSOR", "are");
+        parameters.put("X-GP-OPTIONS-RESOLVER", "packed");
+        parameters.put("X-GP-DATA-DIR", "i'm/ready/to/go");
+        parameters.put("X-GP-FRAGMENT-METADATA", "U29tZXRoaW5nIGluIHRoZSB3YXk=");
+        parameters.put("X-GP-OPTIONS-I'M-STANDING-HERE", "outside-your-door");
+        parameters.put("X-GP-USER", "alex");
     }
 
     /*
