@@ -26,6 +26,7 @@ buildscript {
     dependencies {
         classpath "com.netflix.nebula:gradle-ospackage-plugin:2.2.6"
         classpath 'com.netflix.nebula:gradle-aggregate-javadocs-plugin:2.2.+'
+        classpath 'net.researchgate:gradle-release:2.7.0'
     }
 }
 
@@ -58,6 +59,7 @@ subprojects { subProject ->
     apply plugin: 'java'
     apply plugin: 'os-package'
     apply plugin: 'maven-publish'
+    apply plugin: 'net.researchgate.release'
 
     group = 'org.greenplum.pxf'
 
@@ -70,6 +72,11 @@ subprojects { subProject ->
 
     clean {
         dependsOn(removeIdeaOutDirectory)
+    }
+
+    release {
+        buildTasks = ['clean', 'compileTestJava']
+        versionPropertyFile = 'gradle.properties'
     }
 
     compileJava {
@@ -318,8 +325,6 @@ wrapper {
     gradleVersion = '4.9'
 }
 
-
-
 task version {
     doLast {
         println project.version
@@ -395,7 +400,7 @@ task tar(type: Tar, dependsOn: [assemble]) {
     from assemble.outputs.files
 }
 
-task install (type: Copy, dependsOn: [assemble]) {
+task install(type: Copy, dependsOn: [assemble]) {
     from assemble.outputs.files
     into System.properties['deployPath']
 }

@@ -61,6 +61,9 @@ all:
 compile:
 	./gradlew compileJava && make -C $(PXF_CLI_MAKEFILE_LOCATION)
 
+release:
+	./gradlew release
+
 test-cli:
 	make -C $(PXF_CLI_MAKEFILE_LOCATION) test
 
