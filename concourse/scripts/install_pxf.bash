@@ -17,13 +17,14 @@ cat << EOF
 EOF
 
 function create_pxf_installer_script() {
-cat > /tmp/install_pxf.sh <<-EOFF
+cat > /tmp/install_pxf.sh <<EOFF
 #!/bin/bash
 
 set -euxo pipefail
 
 GPHOME=/usr/local/greenplum-db-devel
 PXF_HOME="\${GPHOME}/pxf"
+PXF_CONF_DIR="/home/gpadmin/pxf"
 export HADOOP_VER=2.6.5.0-292
 
 function install_java() {
@@ -56,13 +57,13 @@ function setup_pxf_env() {
 
 	if [ "${IMPERSONATION}" == "false" ]; then
 		echo 'Impersonation is disabled, updating pxf-env.sh property'
-		su gpadmin -c "sed -i -e 's|^[[:blank:]]*export PXF_USER_IMPERSONATION=.*$|export PXF_USER_IMPERSONATION=false|g' \${PXF_HOME}/conf/pxf-env.sh"
+		su gpadmin -c "sed -i -e 's|^[[:blank:]]*export PXF_USER_IMPERSONATION=.*$|export PXF_USER_IMPERSONATION=false|g' \${PXF_CONF_DIR}/conf/pxf-env.sh"
 	fi
 
-	su gpadmin -c "sed -i -e 's|^[[:blank:]]*export PXF_JVM_OPTS=.*$|export PXF_JVM_OPTS=${PXF_JVM_OPTS}|g' \${PXF_HOME}/conf/pxf-env.sh"
+	su gpadmin -c "sed -i -e 's|^[[:blank:]]*export PXF_JVM_OPTS=.*$|export PXF_JVM_OPTS=\"${PXF_JVM_OPTS}\"|g' \${PXF_CONF_DIR}/conf/pxf-env.sh"
 
 	echo "---------------------PXF environment -------------------------"
-	cat \${PXF_HOME}/conf/pxf-env.sh
+	cat \${PXF_CONF_DIR}/conf/pxf-env.sh
 
 	popd > /dev/null
 }
@@ -125,15 +126,16 @@ EOF
 	</property>
 </configuration>
 EOF
-    rm -rf \$PXF_HOME/conf/core-site.xml \$PXF_HOME/conf/hdfs-site.xml
-    cp /etc/hadoop/conf/core-site.xml \$PXF_HOME/conf/core-site.xml
-    cp /etc/hadoop/conf/hdfs-site.xml \$PXF_HOME/conf/hdfs-site.xml
+    rm -rf \$PXF_CONF_DIR/conf/core-site.xml \$PXF_CONF_DIR/conf/hdfs-site.xml
+    cp /etc/hadoop/conf/core-site.xml \$PXF_CONF_DIR/conf/core-site.xml
+    cp /etc/hadoop/conf/hdfs-site.xml \$PXF_CONF_DIR/conf/hdfs-site.xml
 }
 
 function main() {
 	# Reserve port 5888 for PXF service
 	echo "pxf             5888/tcp               # PXF Service" >> /etc/services
 
+	mkdir \$PXF_CONF_DIR/conf
 	tar -xzf pxf_tarball/pxf.tar.gz -C \${GPHOME}
 	chown -R gpadmin:gpadmin \${PXF_HOME}
 
@@ -161,7 +163,7 @@ function run_pxf_installer_script() {
 	gpconfig -c gp_hadoop_home -v '/usr/hdp/2.6.5.0-292' && \
 	gpconfig -c gp_hadoop_target_version -v 'hdp' && gpstop -u && \
 	gpssh -f ~gpadmin/segment_host_list -v -u centos -s -e 'sudo /home/centos/install_pxf.sh' && \
-	\$GPHOME/pxf/bin/pxf cluster init && \
+	PXF_CONF=${PXF_CONF_DIR} \$GPHOME/pxf/bin/pxf cluster init && \
 	\$GPHOME/pxf/bin/pxf cluster start"
 }
 
